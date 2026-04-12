@@ -119,8 +119,13 @@ class YwdPollenBar extends HTMLElement {
 
     const getPpm = (entity) => parseInt(hass.states[entity]?.state) || 0;
     
+    // THE FIX: Scrub underscores and dashes from the HA backend state
     const getLvlScore = (entity) => {
-      const state = hass.states[`${entity}_level`]?.state?.toLowerCase();
+      const rawState = hass.states[`${entity}_level`]?.state;
+      if (!rawState) return 0;
+      
+      const state = rawState.toLowerCase().replace(/_/g, ' ').replace(/-/g, ' ').trim();
+      
       if (state === 'very high') return 4;
       if (state === 'high') return 3;
       if (state === 'moderate') return 2;
@@ -137,7 +142,6 @@ class YwdPollenBar extends HTMLElement {
     const gLvl = getLvlScore(g_sensor);
     const wLvl = getLvlScore(w_sensor);
 
-    // Force expanded state if config is checked
     if (this.config.always_expanded) {
       this.isExpanded = true;
       this.minimal.style.opacity = '0';
@@ -147,7 +151,6 @@ class YwdPollenBar extends HTMLElement {
       this.expanded.style.pointerEvents = 'auto';
       if (this.autoCloseTimeout) clearTimeout(this.autoCloseTimeout);
     } else if (!this.isExpanded) {
-      // Ensure it resets properly if toggled off
       this.minimal.style.opacity = '1';
       this.minimal.style.transform = 'translateX(0)';
       this.expanded.style.opacity = '0';
